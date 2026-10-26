@@ -5,6 +5,8 @@ Laravel 13 / React 19 / Inertia 3 / PHP 8.4 / MySQL 8.4を使用する、架空�
 
 先方指定の[webimpact-dev/laravel-react-ai-training](https://github.com/webimpact-dev/laravel-react-ai-training)（基準コミット：`6ad5aef17b6084f4ca8a5b3caccf6bb90b31a563`）をベースに、題材の業務機能・架空データ・研修用設定とテストを追加しています。
 
+第2回の比較演習・設定デモ・レビュー用Skillは[training/lesson2/README.md](training/lesson2/README.md)にまとめています。生成待ちや環境の支障がある場合に使う、実行済みの比較例・デモ結果も同梱しています。
+
 ## 1. 自分用リポジトリを作る
 
 講師が用意した2題のうち、取り組む方を1つ選びます。GitHubで「Use this template」から自分用の**非公開**リポジトリを作成し、ローカルへcloneしてください。

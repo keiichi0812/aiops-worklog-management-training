@@ -1,0 +1,16 @@
+<?php
+
+namespace Workshop;
+
+final class ExpirySelection
+{
+    /**
+     * @param list<array{id:int,user_id:int,starts_on:string,ends_on:string,stopped:bool}> $licenses
+     * @return list<int>
+     */
+    public function select(array $licenses, int $ownerId, string $today): array
+    {
+        // TODO: project-spec.txt の条件を満たすIDを返す。
+        return [];
+    }
+}

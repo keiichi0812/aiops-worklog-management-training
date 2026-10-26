@@ -1,0 +1,42 @@
+<?php
+
+namespace Workshop;
+
+use DateTimeImmutable;
+use DateTimeZone;
+
+final class ExpirySelection
+{
+    /**
+     * @param list<array{id:int,user_id:int,starts_on:string,ends_on:string,stopped:bool}> $licenses
+     * @return list<int>
+     */
+    public function select(array $licenses, int $ownerId, string $today): array
+    {
+        $limit = (new DateTimeImmutable($today, new DateTimeZone('UTC')))
+            ->modify('+30 days')
+            ->format('Y-m-d');
+
+        $selected = [];
+        foreach ($licenses as $license) {
+            if ($license['user_id'] !== $ownerId || $license['stopped']) {
+                continue;
+            }
+            if ($license['starts_on'] > $today) {
+                continue;
+            }
+            if ($license['ends_on'] < $today || $license['ends_on'] > $limit) {
+                continue;
+            }
+            $selected[] = $license;
+        }
+
+        usort(
+            $selected,
+            static fn (array $a, array $b): int =>
+                [$a['ends_on'], $a['id']] <=> [$b['ends_on'], $b['id']]
+        );
+
+        return array_map(static fn (array $l): int => $l['id'], $selected);
+    }
+}

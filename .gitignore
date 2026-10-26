@@ -37,3 +37,7 @@ yarn-error.log
 /.pi
 /opencode.json
 /opencode.jsonc
+
+/training/lesson2/runtime/
+
+/training/lesson2/results-local/

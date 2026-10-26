@@ -1,0 +1,52 @@
+{
+    "permissions": {
+        "allow": [
+            "Read(./training/lesson2/**)",
+            "Read(./app/Services/LessonTwoDemoService.php)",
+            "Bash(git status*)",
+            "Bash(git diff*)",
+            "Bash(git commit --dry-run*)",
+            "Bash(docker compose exec -T php php training/lesson2/hooks/check-naming.php)",
+            "Bash(docker compose exec -T php vendor/bin/phpunit --no-configuration training/lesson2/comparison/ExpirySelectionTest.php)"
+        ],
+        "ask": [
+            "Bash(git push*)",
+            "Bash(composer require*)",
+            "Bash(docker compose exec -T php php artisan migrate*)"
+        ],
+        "deny": [
+            "Read(./.env)",
+            "Read(./.env.local)",
+            "Read(./.env.production)",
+            "Read(./training/lesson2/runtime/dummy-secret.txt)",
+            "Bash(cat training/lesson2/runtime/dummy-secret.txt*)",
+            "Bash(rm -rf*)"
+        ]
+    },
+    "hooks": {
+        "PreToolUse": [
+            {
+                "matcher": "Bash",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "bash \"$CLAUDE_PROJECT_DIR/training/lesson2/hooks/run.sh\"",
+                        "timeout": 30
+                    }
+                ]
+            }
+        ],
+        "PostToolUse": [
+            {
+                "matcher": "Write|Edit",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "bash \"$CLAUDE_PROJECT_DIR/training/lesson2/hooks/run.sh\"",
+                        "timeout": 30
+                    }
+                ]
+            }
+        ]
+    }
+}

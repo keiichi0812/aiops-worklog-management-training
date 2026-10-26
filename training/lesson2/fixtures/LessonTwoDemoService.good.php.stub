@@ -1,0 +1,13 @@
+<?php
+
+namespace App\Services;
+
+final class LessonTwoDemoService
+{
+    // LESSON2_OWNED_FIXTURE: business data and DB are not accessed.
+    /** @return array{status: string} */
+    public function makeReport(): array
+    {
+        return ['status' => 'demo'];
+    }
+}

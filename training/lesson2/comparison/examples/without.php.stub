@@ -1,0 +1,40 @@
+<?php
+
+namespace Workshop;
+
+final class ExpirySelection
+{
+    private const WINDOW_DAYS = 30;
+
+    /**
+     * @param list<array{id:int,user_id:int,starts_on:string,ends_on:string,stopped:bool}> $licenses
+     * @return list<int>
+     */
+    public function select(array $licenses, int $ownerId, string $today): array
+    {
+        // 入力は正規化済みのYYYY-MM-DDなので、文字列比較で日付の前後を判定できる。
+        $limit = (new \DateTimeImmutable($today, new \DateTimeZone('UTC')))
+            ->modify('+' . self::WINDOW_DAYS . ' days')
+            ->format('Y-m-d');
+
+        $targets = array_filter(
+            $licenses,
+            static fn (array $license): bool =>
+                $license['user_id'] === $ownerId
+                && !$license['stopped']
+                && $license['starts_on'] <= $today
+                && $license['ends_on'] >= $today
+                && $license['ends_on'] <= $limit
+        );
+
+        // 終了日の昇順、同じ終了日はIDの昇順。
+        usort(
+            $targets,
+            static fn (array $a, array $b): int =>
+                [$a['ends_on'], $a['id']] <=> [$b['ends_on'], $b['id']]
+        );
+
+        // usortで添字は0から振り直される。
+        return array_map(static fn (array $license): int => $license['id'], $targets);
+    }
+}

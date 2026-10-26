@@ -1,0 +1,25 @@
+<?php
+
+namespace Workshop;
+
+final class ExpirySelection
+{
+    /**
+     * @param list<array{id:int,user_id:int,starts_on:string,ends_on:string,stopped:bool}> $licenses
+     * @return list<int>
+     */
+    public function select(array $licenses, int $ownerId, string $today): array
+    {
+        $lastDay = (new \DateTimeImmutable($today))->modify('+30 days')->format('Y-m-d');
+        $selected = array_filter($licenses, fn (array $license): bool =>
+            $license['user_id'] === $ownerId
+            && ! $license['stopped']
+            && $license['starts_on'] <= $today
+            && $license['ends_on'] >= $today
+            && $license['ends_on'] <= $lastDay
+        );
+        usort($selected, fn (array $a, array $b): int => [$a['ends_on'], $a['id']] <=> [$b['ends_on'], $b['id']]);
+
+        return array_values(array_column($selected, 'id'));
+    }
+}
