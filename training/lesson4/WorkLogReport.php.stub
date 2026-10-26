@@ -1,0 +1,12 @@
+<?php
+
+namespace App\Services;
+
+class WorkLogReport
+{
+    public function cost(int $halfHours, int $hourlyRate): int
+    {
+        // TODO: 半時間単位の工数と固定単価から、概算コスト（円）を計算する。
+        return 0;
+    }
+}
