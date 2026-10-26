@@ -39,9 +39,13 @@ class WorkLogController extends Controller
         if ($request->filled('division')) {
             $query->whereHas('project', fn ($q) => $q->where('division', $request->string('division')->toString()));
         }
-        $summary = (clone $query)->get()->groupBy(fn (WorkLog $log): string => $log->project->name.' / '.$log->user->name)
-            ->map(fn ($items, string $label): array => ['label' => $label, 'hours' => $items->sum('half_hours') / 2,
-                'cost' => $items->sum(fn (WorkLog $log): int => $report->cost($log->half_hours, $log->user->hourly_rate))])->values();
+        $logs = (clone $query)->get();
+        $summary = $logs->groupBy(fn (WorkLog $log): string => $log->project_id.' / '.$log->user_id)
+            ->map(fn ($items): array => ['label' => $items->first()->project->name.' / '.$items->first()->user->name,
+                'hours' => $report->hours((int) $items->sum('half_hours'))])->values();
+        $dailySummary = $logs->sortByDesc('worked_on')->groupBy(fn (WorkLog $log): string => $log->worked_on->toDateString().' / '.$log->user_id)
+            ->map(fn ($items): array => ['date' => $items->first()->worked_on->toDateString(), 'owner' => $items->first()->user->name,
+                'hours' => $report->hours((int) $items->sum('half_hours'))])->values();
         $props = [
             'title' => '工数管理', 'baseUrl' => route('worklogs.index'), 'fields' => config('training.fields'),
             'columns' => config('training.columns'), 'filters' => $filters, 'canManage' => true,
@@ -49,7 +53,7 @@ class WorkLogController extends Controller
             'options' => ['project_id' => Project::orderBy('code')->get()->map(fn (Project $project): array => ['id' => $project->id, 'name' => $project->code.'：'.$project->name]),
                 'customer_id' => Customer::orderBy('name')->get(['id', 'name']),
                 'user_id' => User::when(! $request->user()->isAdmin(), fn ($q) => $q->whereKey($request->user()->id))->get(['id', 'name'])],
-            'summary' => $summary, 'topic' => 'worklog', 'today' => today()->toDateString(), 'ownRate' => $request->user()->hourly_rate,
+            'summary' => $summary, 'topic' => 'worklog', 'today' => today()->toDateString(), 'totalHours' => $report->hours((int) $logs->sum('half_hours')), 'dailySummary' => $dailySummary,
         ];
 
         return $request->expectsJson() ? response()->json($props) : Inertia::render('training/index', $props);
@@ -59,9 +63,8 @@ class WorkLogController extends Controller
     private function row(WorkLog $log, WorkLogReport $report): array
     {
         return [...$log->only(['id', 'project_id', 'user_id', 'description']), 'worked_on' => $log->worked_on->toDateString(),
-            'hours' => $log->half_hours / 2, 'project' => $log->project->code.'：'.$log->project->name,
-            'customer' => $log->project->customer->name, 'division' => $log->project->division, 'owner' => $log->user->name,
-            'cost' => $report->cost($log->half_hours, $log->user->hourly_rate)];
+            'hours' => $report->hours($log->half_hours), 'project' => $log->project->code.'：'.$log->project->name,
+            'customer' => $log->project->customer->name, 'division' => $log->project->division, 'owner' => $log->user->name];
     }
 
     public function show(Request $request, int $id, WorkLogReport $report): Response|JsonResponse

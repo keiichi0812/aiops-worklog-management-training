@@ -30,11 +30,11 @@ type Props = {
         count?: number;
         quantity?: number;
         hours?: number;
-        cost?: number;
     }[];
     topic?: string;
     today?: string;
-    ownRate?: number;
+    totalHours?: number;
+    dailySummary?: { date: string; owner: string; hours: number }[];
 };
 
 const inputClass =
@@ -54,7 +54,8 @@ export default function TrainingIndex({
     summary,
     topic,
     today,
-    ownRate,
+    totalHours,
+    dailySummary = [],
 }: Props) {
     const page = usePage<{ auth: Auth; training: { exercise: boolean } }>();
     const { auth } = page.props;
@@ -179,11 +180,6 @@ export default function TrainingIndex({
                             ）
                         </p>
                     </div>
-                    {ownRate !== undefined && (
-                        <p className="text-sm">
-                            自分の研修用単価：{ownRate.toLocaleString()}円／h
-                        </p>
-                    )}
                 </header>
                 <section
                     aria-label="検索と絞り込み"
@@ -282,6 +278,39 @@ export default function TrainingIndex({
                         条件を解除
                     </button>
                 </section>
+                {topic === 'worklog' && (
+                    <section
+                        aria-label="作業時間の概要"
+                        className="rounded-lg border p-4"
+                    >
+                        <h2 className="text-lg font-semibold">
+                            選択月・検索条件内の作業時間：{totalHours ?? 0}h
+                        </h2>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                            案件別の配分と日別の合計から、作業時間の偏りや長時間作業を確認します。記録された作業時間の集計であり、勤怠・残業時間を自動判定するものではありません。
+                        </p>
+                        <h3 className="mt-4 font-medium">
+                            日別・作業者別の合計
+                        </h3>
+                        {dailySummary.length === 0 ? (
+                            <p className="mt-2 text-sm">
+                                該当する記録はありません。
+                            </p>
+                        ) : (
+                            <ul className="mt-2 grid gap-2 md:grid-cols-3">
+                                {dailySummary.map((item, index) => (
+                                    <li
+                                        className="rounded border p-2 text-sm"
+                                        key={index}
+                                    >
+                                        {item.date} ／ {item.owner}：
+                                        {item.hours}h
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </section>
+                )}
                 {summary.length > 0 && (
                     <section aria-label="検索対象の集計" className="grid gap-3">
                         <h2 className="text-lg font-semibold">
@@ -299,7 +328,7 @@ export default function TrainingIndex({
                                     <p className="mt-2 text-sm">
                                         {item.count !== undefined
                                             ? `${item.count}件 ／ 契約数 ${item.quantity}`
-                                            : `${item.hours}h ／ ${item.cost?.toLocaleString()}円`}
+                                            : `${item.hours}h`}
                                     </p>
                                 </div>
                             ))}

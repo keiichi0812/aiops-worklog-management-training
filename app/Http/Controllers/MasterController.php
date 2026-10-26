@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -43,7 +42,6 @@ class MasterController extends Controller
             $records->through(fn (Model $user): array => [
                 'id' => $user->getKey(), 'name' => $user->getAttribute('name'),
                 'email' => $user->getAttribute('email'), 'role' => $user->getAttribute('role'),
-                'hourly_rate' => $user->getAttribute('hourly_rate'),
             ]);
         }
         $props = [
@@ -90,7 +88,6 @@ class MasterController extends Controller
                 'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($record)],
                 'password' => [$record->exists ? 'nullable' : 'required', 'string', 'min:12', 'max:200'],
                 'role' => ['required', Rule::in(['admin', 'user'])],
-                'hourly_rate' => ['required', 'integer', 'min:0', 'max:1000000', 'multiple_of:100'],
             ];
         } else {
             $rules += ['code' => ['required', 'string', 'max:40', Rule::unique($table)->ignore($record)], 'notes' => ['nullable', 'string', 'max:2000']];
@@ -108,9 +105,6 @@ class MasterController extends Controller
         if ($resource === 'accounts') {
             if ($record->getKey() === $request->user()->getKey() && $data['role'] !== 'admin') {
                 throw ValidationException::withMessages(['role' => '自分の管理者権限は変更できません。']);
-            }
-            if (config('training.topic') === 'worklog' && $record->exists && $record->getAttribute('hourly_rate') !== (int) $data['hourly_rate'] && DB::table('work_logs')->where('user_id', $record->getKey())->exists()) {
-                throw ValidationException::withMessages(['hourly_rate' => '工数登録後の単価は、この演習では固定です。']);
             }
             if (empty($data['password'])) {
                 unset($data['password']);

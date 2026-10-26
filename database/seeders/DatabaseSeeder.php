@@ -15,10 +15,10 @@ class DatabaseSeeder extends Seeder
     {
         $password = Hash::make('Training!2026');
         $users = [];
-        foreach ([['admin', '管理者', 'admin', 5000], ['user-a', '受講者A', 'user', 3000], ['user-b', '受講者B', 'user', 4000]] as [$key, $name, $role, $rate]) {
+        foreach ([['admin', '管理者', 'admin'], ['user-a', '受講者A', 'user'], ['user-b', '受講者B', 'user']] as [$key, $name, $role]) {
             $users[$key] = User::firstOrNew(['email' => $key.'@example.test']);
             if (! $users[$key]->exists) {
-                $users[$key]->forceFill(['name' => $name, 'password' => $password, 'role' => $role, 'hourly_rate' => $rate, 'email_verified_at' => now()])->save();
+                $users[$key]->forceFill(['name' => $name, 'password' => $password, 'role' => $role, 'email_verified_at' => now()])->save();
             }
         }
 

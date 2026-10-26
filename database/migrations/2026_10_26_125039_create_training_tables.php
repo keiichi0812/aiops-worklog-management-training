@@ -10,7 +10,6 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->string('role', 20)->default('user');
-            $table->unsignedInteger('hourly_rate')->default(3000);
         });
         Schema::create('customers', function (Blueprint $table) {
             $table->id();
@@ -50,7 +49,7 @@ return new class extends Migration
         Schema::dropIfExists('projects');
         Schema::dropIfExists('customers');
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['role', 'hourly_rate']);
+            $table->dropColumn(['role']);
         });
     }
 };

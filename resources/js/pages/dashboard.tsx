@@ -44,7 +44,9 @@ export default function Dashboard() {
                             user-b@example.test
                         </li>
                         <li>初期パスワード：Training!2026（ローカル研修用）</li>
-                        <li>単価・顧客・契約・案件はすべて架空の値です。</li>
+                        <li>
+                            顧客・契約・案件・作業実績はすべて架空のデータです。
+                        </li>
                     </ul>
                 </section>
             </main>

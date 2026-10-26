@@ -4,8 +4,8 @@ namespace App\Services;
 
 class WorkLogReport
 {
-    public function cost(int $halfHours, int $hourlyRate): int
+    public function hours(int $halfHours): float
     {
-        return intdiv($halfHours * $hourlyRate, 2);
+        return $halfHours / 2;
     }
 }

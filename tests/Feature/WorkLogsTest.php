@@ -13,10 +13,10 @@ class WorkLogsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_monthly_report_limits_owner_and_year_month_and_calculates_known_costs(): void
+    public function test_monthly_report_limits_owner_and_year_month_and_aggregates_known_hours(): void
     {
-        $user = User::factory()->create(['hourly_rate' => 3000]);
-        $other = User::factory()->create(['hourly_rate' => 4000]);
+        $user = User::factory()->create([]);
+        $other = User::factory()->create([]);
         $project = Project::factory()->create();
         WorkLog::factory()->create(['user_id' => $user->id, 'project_id' => $project->id, 'worked_on' => '2026-10-31', 'half_hours' => 4]);
         WorkLog::factory()->create(['user_id' => $other->id, 'project_id' => $project->id, 'worked_on' => '2026-10-31', 'half_hours' => 3]);
@@ -25,17 +25,17 @@ class WorkLogsTest extends TestCase
 
         $response = $this->actingAs($user)->getJson('/worklogs?month=2026-10');
 
-        $response->assertJsonCount(1, 'records.data')->assertJsonPath('records.data.0.cost', 6000)->assertJsonCount(1, 'summary')->assertJsonPath('summary.0.cost', 6000);
+        $response->assertJsonCount(1, 'records.data')->assertJsonCount(1, 'summary')->assertJsonPath('totalHours', 2)->assertJsonPath('dailySummary.0.hours', 2);
         $this->assertSame(2, $response->json('summary.0.hours'));
         $this->assertSame([$user->id], collect($response->json('options.user_id'))->pluck('id')->all());
         $response->assertDontSee($other->name);
     }
 
-    public function test_admin_report_includes_all_owners_without_mixing_rates(): void
+    public function test_admin_report_includes_all_owners_with_separate_daily_totals(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $a = User::factory()->create(['hourly_rate' => 3000]);
-        $b = User::factory()->create(['hourly_rate' => 4000]);
+        $a = User::factory()->create([]);
+        $b = User::factory()->create([]);
         $project = Project::factory()->create();
         WorkLog::factory()->create(['project_id' => $project->id, 'user_id' => $a->id, 'worked_on' => '2026-10-20', 'half_hours' => 4]);
         WorkLog::factory()->create(['project_id' => $project->id, 'user_id' => $b->id, 'worked_on' => '2026-10-20', 'half_hours' => 3]);
@@ -43,7 +43,8 @@ class WorkLogsTest extends TestCase
         $response = $this->actingAs($admin)->getJson('/worklogs?month=2026-10');
 
         $response->assertJsonCount(2, 'records.data');
-        $this->assertSame(12000, collect($response->json('summary'))->sum('cost'));
+        $response->assertJsonCount(2, 'dailySummary')->assertJsonPath('totalHours', 3.5);
+        $this->assertSame([1.5, 2], collect($response->json('dailySummary'))->pluck('hours')->sort()->values()->all());
         $this->assertSame(3.5, collect($response->json('summary'))->sum('hours'));
     }
 
@@ -104,14 +105,23 @@ class WorkLogsTest extends TestCase
         $this->assertDatabaseCount('work_logs', 2);
     }
 
-    public function test_rate_cannot_change_after_work_is_recorded(): void
+    public function test_daily_totals_combine_projects_but_keep_days_and_owners_separate(): void
     {
-        $admin = User::factory()->create(['role' => 'admin']);
-        $user = User::factory()->create(['hourly_rate' => 3000]);
-        WorkLog::factory()->create(['user_id' => $user->id]);
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        foreach ([['2026-10-20', 4], ['2026-10-20', 3], ['2026-10-21', 1]] as [$date, $halfHours]) {
+            WorkLog::factory()->create(['user_id' => $user->id, 'worked_on' => $date, 'half_hours' => $halfHours]);
+        }
+        WorkLog::factory()->create(['user_id' => $other->id, 'worked_on' => '2026-10-20', 'half_hours' => 18]);
 
-        $this->actingAs($admin)->patch('/masters/accounts/'.$user->id, ['name' => $user->name, 'email' => $user->email, 'role' => 'user', 'hourly_rate' => 4000])->assertSessionHasErrors('hourly_rate');
+        $response = $this->actingAs($user)->getJson('/worklogs?month=2026-10');
 
-        $this->assertSame(3000, $user->fresh()->hourly_rate);
+        $response->assertJsonPath('totalHours', 4)->assertJsonCount(2, 'dailySummary')
+            ->assertJsonPath('dailySummary.0.date', '2026-10-21')->assertJsonPath('dailySummary.0.hours', 0.5)
+            ->assertJsonPath('dailySummary.1.hours', 3.5);
+        $this->assertArrayNotHasKey('ownRate', $response->json());
+        foreach ($response->json('records.data') as $row) {
+            $this->assertArrayNotHasKey('cost', $row);
+        }
     }
 }

@@ -4,9 +4,9 @@ namespace App\Services;
 
 class WorkLogReport
 {
-    public function cost(int $halfHours, int $hourlyRate): int
+    public function hours(int $halfHours): float
     {
-        // TODO: 半時間単位の工数と固定単価から、概算コスト（円）を計算する。
-        return 0;
+        // TODO: 0.5時間単位の内部値を、表示用の時間数に換算する。
+        return 0.0;
     }
 }

@@ -42,29 +42,27 @@ class TrainingTest extends TestCase
     public function test_admin_can_create_account_with_hashed_password_and_rejects_duplicate_email(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $payload = ['name' => '新しい受講者', 'email' => 'new@example.test', 'password' => 'Training!2026', 'role' => 'user', 'hourly_rate' => 3200];
+        $payload = ['name' => '新しい受講者', 'email' => 'new@example.test', 'password' => 'Training!2026', 'role' => 'user'];
 
         $this->actingAs($admin)->post('/masters/accounts', $payload)->assertRedirect('/masters/accounts');
 
         $created = User::where('email', 'new@example.test')->firstOrFail();
         $this->assertTrue(Hash::check('Training!2026', $created->password));
         $this->assertSame('user', $created->role);
-        $this->assertSame(3200, $created->hourly_rate);
         $this->assertNotNull($created->email_verified_at);
         $this->post('/masters/accounts', $payload)->assertSessionHasErrors('email');
         $this->assertSame(1, User::where('email', 'new@example.test')->count());
     }
 
-    public function test_general_profile_update_cannot_escalate_role_or_change_rate(): void
+    public function test_general_profile_update_cannot_escalate_role(): void
     {
-        $user = User::factory()->create(['role' => 'user', 'hourly_rate' => 3000]);
+        $user = User::factory()->create(['role' => 'user']);
 
-        $this->actingAs($user)->patch('/settings/profile', ['name' => '更新した名前', 'email' => $user->email, 'role' => 'admin', 'hourly_rate' => 9000])->assertRedirect('/settings/profile');
+        $this->actingAs($user)->patch('/settings/profile', ['name' => '更新した名前', 'email' => $user->email, 'role' => 'admin'])->assertRedirect('/settings/profile');
 
         $user->refresh();
         $this->assertSame('更新した名前', $user->name);
         $this->assertSame('user', $user->role);
-        $this->assertSame(3000, $user->hourly_rate);
     }
 
     public function test_master_codes_are_unique_and_related_masters_cannot_be_deleted(): void
@@ -89,7 +87,7 @@ class TrainingTest extends TestCase
 
         $this->assertDatabaseCount('users', 3);
         $this->assertSame('admin', User::where('email', 'admin@example.test')->firstOrFail()->role);
-        $this->assertSame(4000, User::where('email', 'user-b@example.test')->firstOrFail()->hourly_rate);
+        $this->assertSame('user', User::where('email', 'user-b@example.test')->firstOrFail()->role);
         $this->assertDatabaseCount(config('training.topic') === 'license' ? 'licenses' : 'work_logs', config('training.topic') === 'license' ? 7 : 6);
     }
 }
